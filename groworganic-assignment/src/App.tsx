@@ -14,6 +14,9 @@ interface Artwork {
   title: string;
   place_of_origin: string;
   artist_display: string;
+  date_start?: number;
+  date_end?: number;
+  inscriptions?: string;
 }
 
 const ArtworkTable: React.FC = () => {
@@ -22,83 +25,103 @@ const ArtworkTable: React.FC = () => {
   const [rowsToSelect, setRowsToSelect] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
 
-  // Pagination states
+
   const [first, setFirst] = useState(0);
   const [rows, setRows] = useState(10);
   const [totalRecords, setTotalRecords] = useState(0);
 
   const overlayRef = useRef<OverlayPanel>(null);
 
+  
   const fetchData = async (page: number, number: number) => {
     try {
       setLoading(true);
       const res = await fetchArtworks(page, number);
       setData(res.data); // current page data only
-      setTotalRecords(res.total); // total count from API
+      setTotalRecords(res.total);
     } catch (error) {
       console.error("API Fetch Error:", error);
+      setData([]);
     } finally {
       setLoading(false);
     }
   };
 
-  // Initial load
+  // Load data on page change
   useEffect(() => {
-    const page = first / rows + 1;
+    const page = first / rows + 1; // API is 1-based
     fetchData(page, rows);
   }, [first, rows]);
 
-  // Custom bulk row select
+  // 🎯 CORE LOGIC (NO PREFETCH, CURRENT PAGE ONLY)
   const handleCustomRowSelect = () => {
     if (!rowsToSelect || rowsToSelect <= 0) return;
-    const allowedCount = Math.min(rowsToSelect, data.length);
-    const rowsToBeSelected = data.slice(0, allowedCount);
+
+  
+    const count = Math.min(rowsToSelect, data.length);
+    const rowsToBeSelected = data.slice(0, count);
+
     setSelectedRows(rowsToBeSelected);
     overlayRef.current?.hide();
+    setRowsToSelect(null);
   };
 
-  // Header with checkbox + dropdown
-  const headerWithDropdown = () => {
+  
+  const selectionHeader = () => {
+    const allSelected =
+      data.length > 0 && selectedRows.length === data.length;
+
     return (
-      <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-        {/* Select All (Current Page Only) */}
+      <div className="header-container" style ={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+        {/* Select All (current page only) */}
         <input
           type="checkbox"
-          checked={data.length > 0 && selectedRows.length === data.length}
+          checked={allSelected}
           onChange={(e) => {
             if (e.target.checked) {
-              setSelectedRows(data);
+              setSelectedRows([...data]); // only current page rows
             } else {
               setSelectedRows([]);
             }
           }}
         />
 
-        {/* Dropdown icon */}
+        
         <div
+          className="dropdown-trigger"
           onClick={(e) => overlayRef.current?.toggle(e)}
-          className="dropdown-icon"
         >
-          <i className="pi pi-chevron-down"></i>
+          <i className="pi pi-chevron-down" style ={{backgroundColor: "#f3f4f6"}}></i>
         </div>
 
-        {/* Overlay panel */}
-        <OverlayPanel ref={overlayRef}>
-          <div style={{ padding: "12px", minWidth: "260px", backgroundColor: "whitesmoke" }}>
-            <h4 style={{ margin: "0 0 6px 0", color: "black" }}>Select Multiple Rows</h4>
-            <p style={{ fontSize: "13px", color: "#6b7280", marginBottom: "12px" }}>
-              Enter number of rows you want (current page only)
+        <OverlayPanel ref={overlayRef} style={{backgroundColor:"whitesmoke", padding:"2.3rem"}}>
+          <div className="custom-panel">
+            <h4 className="panel-title" style={{color: "#333"}}>
+              Select the number of rows you want
+            </h4>
+
+            <p className="panel-subtitle" style={{color: "#333"}}>
+              Selection will apply only on current page rows
             </p>
-            <div style={{ display: "flex", gap: "8px" }}>
+
+            <div className="panel-input-row">
               <InputNumber
-                value={rowsToSelect || undefined}
-                onValueChange={(e) => setRowsToSelect(e.value || null)}
+                value={rowsToSelect ?? undefined}
+                onValueChange={(e) =>
+                  setRowsToSelect(e.value ?? null)
+                }
                 min={1}
-                max={rows}
-                placeholder="Enter rows"
-                style={{ width: "140px", backgroundColor: "white" }}
+                max={data.length}
+                placeholder="Enter number of rows"
+                className="rows-input"
+                style={{width: "100%",marginBottom: "0.5rem",height: "2.5rem"}}
               />
-              <Button label="Select" onClick={handleCustomRowSelect} />
+
+              <Button
+                label="Apply"
+                icon="pi pi-check"
+                onClick={handleCustomRowSelect}
+              />
             </div>
           </div>
         </OverlayPanel>
@@ -106,7 +129,7 @@ const ArtworkTable: React.FC = () => {
     );
   };
 
-  // Pagination handler
+  // Pagination change
   const onPageChange = (event: DataTablePageEvent) => {
     setFirst(event.first);
     setRows(event.rows);
@@ -115,37 +138,46 @@ const ArtworkTable: React.FC = () => {
 
   return (
     <div className="card">
-      <div style={{ marginBottom: "10px", fontWeight: 500 }}>
-        Selected: {selectedRows.length} rows
+      {/* Heading */}
+      <div className="selected-heading">
+        Selected Rows: {selectedRows.length}
       </div>
 
-      {/* Table without internal paginator */}
+      {/* DataTable */}
       <DataTable
         value={data}
         loading={loading}
         lazy
-        first={first}
-        rows={rows}
-        totalRecords={totalRecords}
-        selection={selectedRows}
-        onSelectionChange={(e) => setSelectedRows(e.value)}
         dataKey="id"
+        selection={selectedRows}
+        onSelectionChange={(e) =>
+          setSelectedRows(e.value as Artwork[])
+        }
+        responsiveLayout="scroll"
       >
-        <Column header={headerWithDropdown} selectionMode="multiple" style={{ width: "5rem" }} />
+        {/* Dropdown BEFORE title (left side) */}
+        <Column
+          header={selectionHeader}
+          selectionMode="multiple"
+          style={{ width: "4rem" }}
+        />
+
         <Column field="title" header="TITLE" />
         <Column field="place_of_origin" header="PLACE OF ORIGIN" />
         <Column field="artist_display" header="ARTIST" />
+        <Column field="inscriptions" header="INSCRIPTIONS" />
+        <Column field="date_start" header="START DATE" />
+        <Column field="date_end" header="END DATE" />
       </DataTable>
 
-      {/* External paginator below table */}
+      {/* External Paginator (as you were using) */}
       <Paginator
         first={first}
         rows={rows}
         totalRecords={totalRecords}
-        rowsPerPageOptions={[10, 20, 50]}
+        // rowsPerPageOptions={[10, 20, 50]}
         onPageChange={onPageChange}
-        template="CurrentPageReport FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink RowsPerPageDropdown"
-        currentPageReportTemplate="Showing {first} to {last} of {totalRecords} entries"
+        template="RowsPerPageDropdown PrevPageLink PageLinks NextPageLink CurrentPageReport"
       />
     </div>
   );

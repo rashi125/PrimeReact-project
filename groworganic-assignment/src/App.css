@@ -1,4 +1,8 @@
-PrimeReact DataTable custom styling
+
+@import "primereact/resources/themes/lara-light-blue/theme.css";
+@import "primereact/resources/primereact.min.css";
+@import "primeicons/primeicons.css";
+
 .p-table,.p-datatable td,
 .p-datatable th{
   color:#000 ;
@@ -7,7 +11,7 @@ PrimeReact DataTable custom styling
 }
 .p-datatable {
   margin: 20px auto;
-  width: 160%;
+  width: 100%;
   border: 1px solid #ddd;
   border-radius: 8px;
   background: #fff;
@@ -44,39 +48,14 @@ PrimeReact DataTable custom styling
 }
 
 .p-button:hover {
-  background-color: #2563eb; /* darker blue on hover */
-}
-.dropdown-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  border: 1px solid #d1d5db;
-  border-radius: 6px;
-  padding: 6px;
-  width: 32px;
-  background-color: #fff;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-  transition: all 0.2s ease-in-out;
+  background-color: #2563eb; 
 }
 
-.dropdown-icon i {
-  color: black;
-  font-size: 16px;
-}
-
-/* Hover effect */
-.dropdown-icon:hover {
-  background-color: #f3f4f6; /* light gray */
-  border-color: #9ca3af;     /* darker border */
-}
 .p-paginator {
   margin-top: 12px;
-  padding: 10px;
-  background: #f9f9f9;
-  border-top: 1px solid #ddd;
+  padding: 6px;
   display: flex;
-  justify-content: space-between;
+gap:4px;
   align-items: center;
 }
 
@@ -86,5 +65,5 @@ PrimeReact DataTable custom styling
 
 .p-paginator-current {
   font-size: 13px;
-  color: #000;
+  color: #fcf7f7;
 }
