@@ -119,7 +119,9 @@ const ArtworkTable: React.FC = () => {
       >
         <input
           type="checkbox"
-          ref={checkboxRef}
+          ref={(el) => {
+            if (el) el.indeterminate = partiallySelected;
+          }}
           onChange={(e) => {
             const currentPage = Math.floor(first / rows) + 1;
             if (e.target.checked) {
