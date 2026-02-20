@@ -1,10 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { PrimeReactProvider } from "primereact/api";
 import { DataTable } from "primereact/datatable";
-import type {
-  DataTablePageEvent,
-  DataTableSelectionMultipleChangeEvent,
-} from "primereact/datatable";
+import type { DataTablePageEvent } from "primereact/datatable";
 import { Column } from "primereact/column";
 import { OverlayPanel } from "primereact/overlaypanel";
 import { InputNumber } from "primereact/inputnumber";
@@ -160,18 +157,6 @@ const ArtworkTable: React.FC = () => {
     );
   };
 
-  const onSelectionChange = (
-    e: DataTableSelectionMultipleChangeEvent<Artwork[]>,
-  ) => {
-    const selected = e.value ?? [];
-    setSelectedRows(selected);
-    const currentPage = Math.floor(first / rows) + 1;
-    setSelectedIdsByPage((prev) => ({
-      ...prev,
-      [currentPage]: selected.map((s) => s.id),
-    }));
-  };
-
   const onPageChange = (event: DataTablePageEvent) => {
     setFirst(event.first);
     setRows(event.rows);
@@ -186,12 +171,14 @@ const ArtworkTable: React.FC = () => {
         >
           Selected Rows: {selectedRows.length}
         </div>
+
+        {/* DEPLOY SAFE: selectionMode added, inline handler kept */}
         <DataTable
           value={data}
           loading={loading}
           lazy
           dataKey="id"
-          selectionMode="multiple" 
+          selectionMode="multiple"
           selection={selectedRows}
           onSelectionChange={(e) => {
             const selected = (e.value ?? []) as Artwork[];
