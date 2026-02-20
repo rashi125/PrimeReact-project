@@ -161,7 +161,7 @@ const ArtworkTable: React.FC = () => {
   };
 
   const onSelectionChange = (
-    e: DataTableSelectionMultipleChangeEvent<Artwork[]>
+    e: DataTableSelectionMultipleChangeEvent<Artwork[]>,
   ) => {
     const selected = e.value ?? [];
     setSelectedRows(selected);
@@ -186,14 +186,22 @@ const ArtworkTable: React.FC = () => {
         >
           Selected Rows: {selectedRows.length}
         </div>
-
         <DataTable
           value={data}
           loading={loading}
           lazy
           dataKey="id"
+          selectionMode="multiple" 
           selection={selectedRows}
-          onSelectionChange={onSelectionChange}
+          onSelectionChange={(e) => {
+            const selected = (e.value ?? []) as Artwork[];
+            setSelectedRows(selected);
+            const currentPage = Math.floor(first / rows) + 1;
+            setSelectedIdsByPage((prev) => ({
+              ...prev,
+              [currentPage]: selected.map((s) => s.id),
+            }));
+          }}
           responsiveLayout="scroll"
         >
           <Column
