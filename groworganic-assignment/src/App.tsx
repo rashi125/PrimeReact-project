@@ -24,6 +24,8 @@ interface Artwork {
 const ArtworkTable: React.FC = () => {
   const [data, setData] = useState<Artwork[]>([]);
   const [selectedRows, setSelectedRows] = useState<Artwork[]>([]);
+  
+  const [selectedIdsByPage, setSelectedIdsByPage] = useState<Record<number, number[]>>({});
   const [rowsToSelect, setRowsToSelect] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -52,7 +54,32 @@ const ArtworkTable: React.FC = () => {
     fetchData(page, rows);
   }, [first, rows]);
 
-  // Clean up overlay on unmount to prevent memory leaks/scroll errors
+  
+  useEffect(() => {
+    const currentPage = Math.floor(first / rows) + 1;
+    const ids = selectedIdsByPage[currentPage] || [];
+    if (ids.length === 0) {
+      setSelectedRows([]);
+      return;
+    }
+    const restored = data.filter((d) => ids.includes(d.id));
+    setSelectedRows(restored);
+  }, [data, first, rows, selectedIdsByPage]);
+
+ const checkboxRef = useRef<HTMLInputElement>(null);
+
+useEffect(() => {
+  if (checkboxRef.current) {
+    const currentPage = Math.floor(first / rows) + 1;
+    const currentSelectedIds = selectedIdsByPage[currentPage] || [];
+    const allSelected = data.length > 0 && currentSelectedIds.length === data.length;
+    const partiallySelected = currentSelectedIds.length > 0 && !allSelected;
+
+    checkboxRef.current.indeterminate = partiallySelected;
+    checkboxRef.current.checked = allSelected;
+  }
+}, [data, first, rows, selectedIdsByPage]);
+
   useEffect(() => {
     return () => {
       overlayRef.current?.hide();
@@ -65,44 +92,56 @@ const ArtworkTable: React.FC = () => {
     const count = Math.min(rowsToSelect, data.length);
     const rowsToBeSelected = data.slice(0, count);
 
+    const currentPage = Math.floor(first / rows) + 1;
     setSelectedRows(rowsToBeSelected);
+    setSelectedIdsByPage((prev) => ({ ...prev, [currentPage]: rowsToBeSelected.map((r) => r.id) }));
     overlayRef.current?.hide();
     setRowsToSelect(null);
   };
 
   const selectionHeader = () => {
-    const allSelected = data.length > 0 && selectedRows.length === data.length;
+  const currentPage = Math.floor(first / rows) + 1;
+  const currentSelectedIds = selectedIdsByPage[currentPage] || [];
 
-    return (
-     
-      <div className="header-container" style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-        <input
-          type="checkbox"
-          checked={allSelected}
-          onChange={(e) => {
-            if (e.target.checked) {
-              setSelectedRows([...data]);
-            } else {
-              setSelectedRows([]);
-            }
-          }}
-        />
+  const allSelected = data.length > 0 && currentSelectedIds.length === data.length;
+  const partiallySelected = currentSelectedIds.length > 0 && !allSelected;
 
-        <div
-          className="dropdown-trigger"
-          style={{ cursor: "pointer" }}
-          onClick={(e) => overlayRef.current?.toggle(e)}
-        >
-          <i className="pi pi-chevron-down" style={{ backgroundColor: "#f3f4f6", padding: "2px", borderRadius: "2px" }}></i>
-        </div>
+  return (
+    <div className="header-container" style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+     <input
+  type="checkbox"
+  ref={checkboxRef}
+  onChange={(e) => {
+    const currentPage = Math.floor(first / rows) + 1;
+    if (e.target.checked) {
+      const ids = data.map((d) => d.id);
+      setSelectedRows([...data]);
+      setSelectedIdsByPage((prev) => ({ ...prev, [currentPage]: ids }));
+    } else {
+      setSelectedRows([]);
+      setSelectedIdsByPage((prev) => {
+        const copy = { ...prev };
+        delete copy[currentPage];
+        return copy;
+      });
+    }
+  }}
+/>
+
+      <div
+        className="dropdown-trigger"
+        style={{ cursor: "pointer" }}
+        onClick={(e) => overlayRef.current?.toggle(e)}
+      >
+        <i className="pi pi-chevron-down" style={{ backgroundColor: "#f3f4f6", padding: "2px", borderRadius: "2px" }}></i>
       </div>
-    );
-  };
+    </div>
+  );
+};
 
   const onPageChange = (event: DataTablePageEvent) => {
     setFirst(event.first);
     setRows(event.rows);
-    setSelectedRows([]);
   };
 
   return (
@@ -118,7 +157,12 @@ const ArtworkTable: React.FC = () => {
         lazy
         dataKey="id"
         selection={selectedRows}
-        onSelectionChange={(e) => setSelectedRows(e.value as Artwork[])}
+        onSelectionChange={(e) => {
+          const selected = e.value as Artwork[];
+          setSelectedRows(selected);
+          const currentPage = Math.floor(first / rows) + 1;
+          setSelectedIdsByPage((prev) => ({ ...prev, [currentPage]: selected.map((s) => s.id) }));
+        }}
         responsiveLayout="scroll"
       >
         <Column
