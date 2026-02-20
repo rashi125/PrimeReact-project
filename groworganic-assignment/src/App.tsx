@@ -172,7 +172,8 @@ const ArtworkTable: React.FC = () => {
           Selected Rows: {selectedRows.length}
         </div>
 
-        <DataTable
+        {/* ONLY FIX: Added <Artwork> generic */}
+        <DataTable<Artwork>
           value={data}
           loading={loading}
           lazy
